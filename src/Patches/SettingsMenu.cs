@@ -12,7 +12,7 @@ internal static class SettingsMenuPatch
 {
     [HarmonyPatch(typeof(SettingsMenu), "Awake")]
     [HarmonyPostfix]
-    static void Patch_Awake(SettingsMenu __instance)
+    static void Awake(SettingsMenu __instance)
     {
         // Adding additional settings
         var extra = __instance.Extra();
@@ -63,7 +63,7 @@ internal static class SettingsMenuPatch
 
     [HarmonyPatch(typeof(SettingsMenu), "Open")]
     [HarmonyPrefix]
-    static void Patch_Open(SettingsMenu __instance)
+    static void Open(SettingsMenu __instance)
     {
         var extra = __instance.Extra();
         extra.AccessibilityBuildTesterMode.SetState(GameSettingsController.Instance.Extra().BuildTesterMode, shouldFireEvent: false);
@@ -72,7 +72,7 @@ internal static class SettingsMenuPatch
 
     [HarmonyPatch(typeof(SettingsMenu), "CreateSettingsSnapshot")]
     [HarmonyPostfix]
-    static void Patch_CreateSettingsSnapshot(SettingsMenu __instance)
+    static void CreateSettingsSnapshot(SettingsMenu __instance)
     {
         SettingsSnapshot snapshot = Traverse.Create(__instance)
                 .Field("rollBackSnapshot")
@@ -87,7 +87,7 @@ internal static class SettingsMenuPatch
 
     [HarmonyPatch(typeof(SettingsMenu), "ApplySnapshot")]
     [HarmonyPostfix]
-    static void Patch_ApplySnapshot(SettingsMenu __instance, SettingsSnapshot snapshot)
+    static void ApplySnapshot(SettingsMenu __instance, SettingsSnapshot snapshot)
     {
         int index = Traverse.Create(__instance)
                 .Field("currentPageIndex")
