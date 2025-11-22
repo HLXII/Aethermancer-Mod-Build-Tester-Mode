@@ -1,4 +1,5 @@
 using BepInEx;
+using BuildTesterMode.Patches;
 using HarmonyLib;
 
 namespace BuildTesterMode;
@@ -11,6 +12,8 @@ public class Plugin : BaseUnityPlugin
     private void Awake()
     {
         _harmony = new Harmony("org.hlxii.plugin.buildtestermode");
+        _harmony.PatchAll(typeof(GameSettingsControllerPatch));
+        _harmony.PatchAll(typeof(SettingsMenuPatch));
     }
 
     private void OnDestroy()
