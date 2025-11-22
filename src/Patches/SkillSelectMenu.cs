@@ -1,0 +1,17 @@
+using HarmonyLib;
+
+namespace BuildTesterMode.Patches;
+
+internal static class SkillSelectMenuPatch
+{
+    [HarmonyPatch(typeof(SkillSelectMenu), "Open")]
+    [HarmonyPostfix]
+    static void Open(SkillSelectMenu __instance)
+    {
+        if (GameSettingsController.Instance.Extra().BuildTesterMode)
+        {
+            __instance.RerollSkillsButton.Text.text = Loca.TEXT_FORMAT("Reroll Skills ({0})", "∞");
+            __instance.RerollSkillsButton.SetDisabled(false);
+        }
+    }
+}

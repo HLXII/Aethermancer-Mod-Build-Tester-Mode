@@ -13,6 +13,8 @@ public class Plugin : BaseUnityPlugin
         _harmony = new Harmony("org.hlxii.plugin.buildtestermode");
         _harmony.PatchAll(typeof(Patches.GameSettingsControllerPatch));
         _harmony.PatchAll(typeof(Patches.SettingsMenuPatch));
+        _harmony.PatchAll(typeof(Patches.InventoryManagerPatch));
+        _harmony.PatchAll(typeof(Patches.SkillSelectMenuPatch));
     }
 
     private void OnDestroy()
