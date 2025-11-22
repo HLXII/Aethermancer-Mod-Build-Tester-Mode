@@ -15,6 +15,8 @@ public class Plugin : BaseUnityPlugin
         _harmony.PatchAll(typeof(Patches.SettingsMenuPatch));
         _harmony.PatchAll(typeof(Patches.InventoryManagerPatch));
         _harmony.PatchAll(typeof(Patches.SkillSelectMenuPatch));
+        _harmony.PatchAll(typeof(Patches.MonsterShrineMenuPatch));
+        _harmony.PatchAll(typeof(Patches.MonsterShrineTriggerPatch));
     }
 
     private void OnDestroy()

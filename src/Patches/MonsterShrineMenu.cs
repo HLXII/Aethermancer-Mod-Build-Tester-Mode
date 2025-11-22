@@ -1,0 +1,23 @@
+using System.Collections.Generic;
+using System.Linq;
+using HarmonyLib;
+
+namespace BuildTesterMode.Patches;
+
+internal static class MonsterShrineMenuPatch
+{
+    [HarmonyPatch(typeof(MonsterShrineMenu), "GetMonstersFromMementos")]
+    [HarmonyPrefix]
+    static bool GetMonstersFromMementos(MonsterShrineMenu __instance, ref List<Monster> __result)
+    {
+        if (!GameSettingsController.Instance.Extra().BuildTesterMode)
+        {
+            return true;
+        }
+
+        __instance.MonsterShrineTrigger.GenerateMementosForShrine(ignoreHasData: true);
+        __result = __instance.MonsterShrineTrigger.ShrineSpecificSouls.Select(mon => MonsterManager.Instance.GetMonster(mon.Monster.ID)).ToList();
+
+        return false;
+    }
+}
