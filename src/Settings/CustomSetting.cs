@@ -1,7 +1,5 @@
 
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using BuildTesterMode.Patches;
 using TMPro;
 using UnityEngine;
@@ -17,7 +15,7 @@ public interface ICustomSetting
     public void SetRollbackSnapshot(ExtendedSettingsSnapshot rollbackSnapshot);
     public void ApplySnapshot(ExtendedSettingsSnapshot snapshot);
     public void InitializeValue(ExtendedGameSettingsController controller);
-    public void InjectControl(SettingsMenu menu);
+    public (MenuListItem, float) BuildControl(SettingsMenu menu);
     public void UpdateControlState();
 }
 
@@ -63,18 +61,17 @@ public class BooleanCustomSetting : IBasicCustomSetting<bool>
         controller.Set(Name, PlayerPrefsManager.GetInt(Key) > 0);
     }
 
-    public void InjectControl(SettingsMenu menu)
+    public (MenuListItem, float) BuildControl(SettingsMenu menu)
     {
         MenuListItemToggle menuItem = menu.GetComponentsInChildren<MenuListItemToggle>(true)
             .FirstOrDefault(m => m.name == "MenuItem_ColorblindAether");
 
-        GameObject duplicate = Object.Instantiate(menuItem.gameObject);
-        duplicate.name = $"MenuItem_{Name}";
-        duplicate.transform.position = new Vector3(duplicate.transform.position.x, -165, duplicate.transform.position.z);
-        MenuListItemToggle newToggle = duplicate.GetComponent<MenuListItemToggle>();
+        GameObject newGameObject = Object.Instantiate(menuItem.gameObject);
+        newGameObject.name = $"MenuItem_{Name}";
+        MenuListItemToggle newToggle = newGameObject.GetComponent<MenuListItemToggle>();
         newToggle.ItemDescription = Description;
 
-        TextMeshPro text = duplicate.GetComponentInChildren<TextMeshPro>();
+        TextMeshPro text = newGameObject.GetComponentInChildren<TextMeshPro>();
         text.text = Name;
 
         // Disable all persistent listeners
@@ -90,21 +87,11 @@ public class BooleanCustomSetting : IBasicCustomSetting<bool>
         });
         newToggle.OnToggle.AddListener((value) =>
         {
-            duplicate.GetComponent<WwiseSFX>().PlayEventByName("Play_SFX_menu_toggle");
+            newGameObject.GetComponent<WwiseSFX>().PlayEventByName("Play_SFX_menu_toggle");
         });
 
-        duplicate.transform.SetParent(menuItem.gameObject.transform.parent, false);
-        duplicate.transform.SetSiblingIndex(menuItem.gameObject.transform.GetSiblingIndex() + 1);
-
-        // Add to paging header
-        PagingHeader header = menu.GetComponentsInChildren<PagingHeader>(true)
-            .FirstOrDefault(m => m.name == "Header_Accessibility");
-        FieldInfo field = typeof(PagingHeader).GetField("pageMenuItems", BindingFlags.NonPublic | BindingFlags.Instance);
-        List<MenuListItem> oldArray = (field.GetValue(header) as MenuListItem[]).ToList();
-        oldArray.Insert(5, newToggle);
-        field.SetValue(header, oldArray.ToArray());
-
         Control = newToggle;
+        return (newToggle, 33);
     }
 
     public void SetValue(ExtendedGameSettingsController controller, bool value)

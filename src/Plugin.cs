@@ -21,11 +21,29 @@ public class Plugin : BaseUnityPlugin
         CustomSettingsManager.CustomSettings.Add(
             new BooleanCustomSetting()
             {
-                Page = "Accessibility",
+                Page = "Custom",
                 Name = "Build Tester Mode",
                 Description = "Turns on Build Testing mode; All available monsters in Monster Shrines, Infinite rerolls",
-                Key = "Accessibility_build_tester_mode",
+                Key = "Custom_build_tester_mode",
                 IsEnabled = () => GameStateManager.Instance.IsMainMenu || ExplorationController.Instance.CurrentArea == EArea.PilgrimsRest
+            }
+        );
+        CustomSettingsManager.CustomSettings.Add(
+            new BooleanCustomSetting()
+            {
+                Page = "Accessibility",
+                Name = "Example",
+                Description = "This is another example",
+                Key = "example"
+            }
+        );
+        CustomSettingsManager.CustomSettings.Add(
+            new BooleanCustomSetting()
+            {
+                Page = "Custom",
+                Name = "Example 2",
+                Description = "This is another example to show the spacing works automatically",
+                Key = "example2"
             }
         );
     }

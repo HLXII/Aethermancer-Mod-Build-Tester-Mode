@@ -5,7 +5,7 @@ namespace BuildTesterMode;
 public static class CustomSettingsManager
 {
     public static List<string> Pages = [
-        "Gameplay",
+        "General",
         "Input",
         "Audio",
         "Video",
