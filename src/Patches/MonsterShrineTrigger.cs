@@ -8,7 +8,7 @@ internal static class MonsterShrineTriggerPatch
     [HarmonyPrefix]
     static bool GenerateMementosForShrine(MonsterShrineTrigger __instance)
     {
-        if (!GameSettingsController.Instance.Extra().BuildTesterMode)
+        if (!GameSettingsController.Instance.GetCustom<bool>("Build Tester Mode"))
         {
             return true;
         }

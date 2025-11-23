@@ -9,6 +9,6 @@ internal static class InventoryManagerPatch
     static bool RemoveSkillReroll(InventoryManager __instance)
     {
         // Don't run this if BuildTesterMode is on
-        return !GameSettingsController.Instance.Extra().BuildTesterMode;
+        return !GameSettingsController.Instance.GetCustom<bool>("Build Tester Mode");
     }
 }

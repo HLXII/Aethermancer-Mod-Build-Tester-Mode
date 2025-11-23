@@ -1,10 +1,7 @@
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using UnityEngine;
-using TMPro;
 
 namespace BuildTesterMode.Patches;
 
@@ -14,60 +11,24 @@ internal static class SettingsMenuPatch
     [HarmonyPostfix]
     static void Awake(SettingsMenu __instance)
     {
-        // Adding additional settings
-        var extra = __instance.Extra();
-
-        MenuListItemToggle menuItem = __instance.GetComponentsInChildren<MenuListItemToggle>(true)
-            .FirstOrDefault(m => m.name == "MenuItem_ColorblindAether");
-
-        GameObject duplicate = Object.Instantiate(menuItem.gameObject);
-        duplicate.name = "MenuItem_BuildTesterMode";
-        duplicate.transform.position = new Vector3(duplicate.transform.position.x, -165, duplicate.transform.position.z);
-        MenuListItemToggle newToggle = duplicate.GetComponent<MenuListItemToggle>();
-        newToggle.ItemDescription = "Turns on Build Testing mode; All available monsters in Monster Shrines, Infinite rerolls";
-
-        TextMeshPro text = duplicate.GetComponentInChildren<TextMeshPro>();
-        text.text = "Build Tester Mode";
-
-        // Disable all persistent listeners
-        for (int i = 0; i < newToggle.OnToggle.GetPersistentEventCount(); i++)
-        {
-            newToggle.OnToggle.SetPersistentListenerState(i, UnityEngine.Events.UnityEventCallState.Off);
-        }
-
-        newToggle.OnToggle.AddListener((value) =>
-        {
-            __instance.Extra().SetAccessibilityBuildTesterMode(value);
-        });
-        newToggle.OnToggle.AddListener((value) =>
-        {
-            duplicate.GetComponent<WwiseSFX>().PlayEventByName("Play_SFX_menu_toggle");
-        });
-
-        duplicate.transform.SetParent(menuItem.gameObject.transform.parent, false);
-        duplicate.transform.SetSiblingIndex(menuItem.gameObject.transform.GetSiblingIndex() + 1);
-
-        // Add to paging header
-        PagingHeader header = __instance.GetComponentsInChildren<PagingHeader>(true)
-            .FirstOrDefault(m => m.name == "Header_Accessibility");
-        FieldInfo field = typeof(PagingHeader).GetField("pageMenuItems", BindingFlags.NonPublic | BindingFlags.Instance);
-        List<MenuListItem> oldArray = (field.GetValue(header) as MenuListItem[]).ToList();
-        oldArray.Insert(5, newToggle);
-        field.SetValue(header, oldArray.ToArray());
-
-        extra.AccessibilityBuildTesterMode = newToggle;
-
         // Add to default settings
-        __instance.defaultSettings.Extra().BuildTesterMode = false;
+        foreach (var customSetting in CustomSettingsManager.CustomSettings)
+        {
+            // TODO: handle location + page
+            customSetting.InjectControl(__instance);
+
+            customSetting.SetDefaultSnapshot(__instance.defaultSettings.Extra());
+        }
     }
 
     [HarmonyPatch(typeof(SettingsMenu), "Open")]
     [HarmonyPrefix]
     static void Open(SettingsMenu __instance)
     {
-        var extra = __instance.Extra();
-        extra.AccessibilityBuildTesterMode.SetState(GameSettingsController.Instance.Extra().BuildTesterMode, shouldFireEvent: false);
-        extra.AccessibilityBuildTesterMode.SetDisabled(!GameStateManager.Instance.IsMainMenu && ExplorationController.Instance.CurrentArea != EArea.PilgrimsRest);
+        foreach (var customSetting in CustomSettingsManager.CustomSettings)
+        {
+            customSetting.UpdateControlState();
+        }
     }
 
     [HarmonyPatch(typeof(SettingsMenu), "CreateSettingsSnapshot")]
@@ -82,79 +43,63 @@ internal static class SettingsMenuPatch
             return;
 
         var extra = snapshot.Extra();
-        extra.BuildTesterMode = GameSettingsController.Instance.Extra().BuildTesterMode;
+
+        foreach (var customSetting in CustomSettingsManager.CustomSettings)
+        {
+            customSetting.SetRollbackSnapshot(extra);
+        }
     }
 
     [HarmonyPatch(typeof(SettingsMenu), "ApplySnapshot")]
     [HarmonyPostfix]
     static void ApplySnapshot(SettingsMenu __instance, SettingsSnapshot snapshot)
     {
-        int index = Traverse.Create(__instance)
+        int currentIndex = Traverse.Create(__instance)
                 .Field("currentPageIndex")
                 .GetValue<int>();
 
-        // 4 is the Accessibility page
-        if (index == 4)
+        foreach (var customSetting in CustomSettingsManager.CustomSettings)
         {
-            if (GameStateManager.Instance.IsMainMenu || ExplorationController.Instance.CurrentArea == EArea.PilgrimsRest)
+            int pageIndex = CustomSettingsManager.Pages.FindIndex((page) => page == customSetting.Page);
+            if (pageIndex == -1)
             {
-                ExtendedSettingsMenu extra = __instance.Extra();
-                bool newValue = snapshot.Extra().BuildTesterMode;
-                extra.SetAccessibilityBuildTesterMode(newValue);
-                extra.AccessibilityBuildTesterMode.SetState(newValue, shouldFireEvent: false);
+                Debug.Log($"Custom setting {customSetting.Name} on invalid page {customSetting.Page}");
+                continue;
             }
+            if (pageIndex != currentIndex)
+            {
+                continue;
+            }
+
+            customSetting.ApplySnapshot(snapshot.Extra());
         }
     }
 }
 
-public class CustomSettings
-{
-    public bool BuildTesterMode { get; set; }
-}
 
-public class CustomSetting
+public class ExtendedSettingsSnapshot
 {
-    public string Name { get; set; }
-    public object DefaultValue { get; set; }
-    public object Value { get; set; }
+    public Dictionary<string, object> CustomSettings { get; set; } = new();
 }
 
 public static class SettingsSnapshotExtensions
 {
-    private static readonly ConditionalWeakTable<SettingsSnapshot, CustomSettings> _extra
+    private static readonly ConditionalWeakTable<SettingsSnapshot, ExtendedSettingsSnapshot> _extra
         = new();
 
-    public static CustomSettings Extra(this SettingsSnapshot snapshot)
+    public static ExtendedSettingsSnapshot Extra(this SettingsSnapshot snapshot)
         => _extra.GetOrCreateValue(snapshot);
 }
 
 public static class SettingsMenuExtensions
 {
-    private static readonly ConditionalWeakTable<SettingsMenu, ExtendedSettingsMenu> _extra
-        = new();
-
-    public static ExtendedSettingsMenu Extra(this SettingsMenu menu)
+    public static void EnableRevertSettings(this SettingsMenu menu)
     {
-        var extra = _extra.GetOrCreateValue(menu);
-        extra.Instance = menu;
-        return extra;
-    }
-}
+        int currentPageIndex = Traverse.Create(menu)
+                               .Field("currentPageIndex")
+                               .GetValue<int>();
 
-public class ExtendedSettingsMenu
-{
-    public SettingsMenu Instance { get; set; }
-    public MenuListItemToggle AccessibilityBuildTesterMode { get; set; }
-
-    public void SetAccessibilityBuildTesterMode(bool buildTesterMode)
-    {
-        int currentPageIndex = Traverse.Create(Instance)
-                                       .Field("currentPageIndex")
-                                       .GetValue<int>();
-
-        GameSettingsController.Instance.Extra().SetBuildTesterMode(buildTesterMode);
-
-        Traverse.Create(Instance)
+        Traverse.Create(menu)
             .Method("EnableRevertSettings", currentPageIndex)
             .GetValue();
     }

@@ -8,7 +8,7 @@ internal static class SkillSelectMenuPatch
     [HarmonyPostfix]
     static void Open(SkillSelectMenu __instance)
     {
-        if (GameSettingsController.Instance.Extra().BuildTesterMode)
+        if (GameSettingsController.Instance.GetCustom<bool>("Build Tester Mode"))
         {
             __instance.RerollSkillsButton.Text.text = Loca.TEXT_FORMAT("Reroll Skills ({0})", "∞");
             __instance.RerollSkillsButton.SetDisabled(false);

@@ -10,7 +10,7 @@ internal static class MonsterShrineMenuPatch
     [HarmonyPrefix]
     static bool GetMonstersFromMementos(MonsterShrineMenu __instance, ref List<Monster> __result)
     {
-        if (!GameSettingsController.Instance.Extra().BuildTesterMode)
+        if (!GameSettingsController.Instance.GetCustom<bool>("Build Tester Mode"))
         {
             return true;
         }

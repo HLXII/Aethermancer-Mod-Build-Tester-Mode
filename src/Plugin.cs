@@ -17,6 +17,17 @@ public class Plugin : BaseUnityPlugin
         _harmony.PatchAll(typeof(Patches.SkillSelectMenuPatch));
         _harmony.PatchAll(typeof(Patches.MonsterShrineMenuPatch));
         _harmony.PatchAll(typeof(Patches.MonsterShrineTriggerPatch));
+
+        CustomSettingsManager.CustomSettings.Add(
+            new BooleanCustomSetting()
+            {
+                Page = "Accessibility",
+                Name = "Build Tester Mode",
+                Description = "Turns on Build Testing mode; All available monsters in Monster Shrines, Infinite rerolls",
+                Key = "Accessibility_build_tester_mode",
+                IsEnabled = () => GameStateManager.Instance.IsMainMenu || ExplorationController.Instance.CurrentArea == EArea.PilgrimsRest
+            }
+        );
     }
 
     private void OnDestroy()
